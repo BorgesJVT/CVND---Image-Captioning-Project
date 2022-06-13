@@ -45,7 +45,7 @@ class DecoderRNN(nn.Module):
         features = features.view(self.batch_size, 1, -1)
         # combining features and embed (batch_size, seq, embed)
         input_tensor = torch.cat((features, embed), dim=1)
-        lstm_outputs, self.hidden = self.lstm(input_tensor, self.hidden)
+        lstm_outputs, _ = self.lstm(input_tensor)
         
         lstm_outputs_shape = list(lstm_outputs.shape)
         lstm_outputs = lstm_outputs.reshape(lstm_outputs.size()[0]*lstm_outputs.size()[1], -1)
@@ -69,14 +69,16 @@ class DecoderRNN(nn.Module):
         batch_size = inputs.shape[0]
         hidden = (torch.randn(1, 1, 512).to(inputs.device),
               torch.randn(1, 1, 512).to(inputs.device))
+        
         while True:
             lstm_output, hidden = self.lstm(inputs, hidden)
-            predicted_caption = self.linear(lstm_output)
-            predicted_caption = predicted_caption.squeeze(1)
-            _, max_pred_index = torch.max(predicted_caption, dim = 1)
+            out = self.linear(lstm_output)
+            out = out.squeeze(1)
+            _, max_pred_index = torch.max(out, dim = 1)
             predicted_caption.append(max_pred_index.cpu().numpy()[0].item())
             if (max_pred_index == 1):
                 break
             inputs = self.embedding(max_pred_index)
             inputs = inputs.unsqueeze(1)
+            
         return predicted_caption
